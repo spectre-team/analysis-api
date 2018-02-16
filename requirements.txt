@@ -1,0 +1,6 @@
+celery==4.1.0
+Flask==0.12.2
+numpy==1.14.0
+-e git+https://github.com/spectre-team/spectre-data.git@e35d51173bc13c08f231d51f899d67db1f1770ec#egg=spectre_data
+tqdm==4.19.5
+typing==3.6.4
