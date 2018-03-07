@@ -11,6 +11,31 @@ API for accessing details of analyses, their configurations and scheduling. Its
 main feature is high extensibility of the system through automated discovery
 and integration of new analysis modules.
 
+# Algorithms
+
+Endpoint `/algorithms/` of this API will provide a dictionary with lists
+of algorithms separated by their types. Example:
+
+```
+{
+    "preprocessing": ["pafft", "baseline_removal"],
+    "analysis": ["divik"]
+}
+```
+
+This dictionary will be automatically updated by the tasks that are registered
+in the cluster.
+
+# Scheduling
+
+Enpoint `/schedule/<task-name>/` accepts `POST` requests with definition of
+computational task parameters. Description of these parameters is available
+in the same manner as asking appropriate analysis worker - these calls are
+getting redirected.
+
+`<task-name>` should be replaced by any available task name listed under
+`/algorithms/` endpoint.
+
 # Specification of a Worker
 
 In order to make worker discoverable and useful in the system, following
@@ -18,8 +43,10 @@ specification must be met.
 
 ## Input Specification Endpoint
 
-Endpoint `/schema/inputs/<task-name>` should provide simplistic specification
+Endpoint `/schema/inputs/<task-name>/` should provide simplistic specification
 of a computational task input as a [JSON-schema](http://json-schema.org/).
+`<task-name>` should be replaced by any available task name listed under
+`/algorithms/` endpoint.
 
 Sample JSON, from the examples provided on the source page:
 
@@ -51,7 +78,7 @@ For such minimal REST API, [Flask framework](flask.pocoo.org/) can be used.
 
 ## Output Specification Endpoint
 
-Endpoint `/schema/outputs/<task-name>` should provide specification of a
+Endpoint `/schema/outputs/<task-name>/` should provide specification of a
 computational task output as follows:
 
 ```
@@ -69,6 +96,9 @@ computational task output as follows:
     ...
 ]
 ```
+
+`<task-name>` should be replaced by any available task name listed under
+`/algorithms/` endpoint.
 
 Expected HTTP return code is `200`. If task of the given name does not exist,
 return code is `404`. Supported HTTP method is `GET`.
@@ -89,6 +119,54 @@ of the analysis. It should follow the format of JSON-schema
 * `output_type` - one of the following: `table` or `plot`
 
 Output types are described further [below](#output-types).
+
+## Input Form Layout Endpoint (optional)
+
+Endpoint `/layout/inputs/<task-name>` may provide simplistic specification
+of a form's layout needed to gather computational task input.
+
+Sample JSON for such styling:
+
+```
+[
+    {
+        "type": "section",
+        "title": "Personal details",
+        "items": ["firstName", "lastName", "age"],
+        "expandable": true,
+        "expanded": false,
+    },
+    ... // another elements of the layout
+]
+```
+
+Format of `layout` should be as samples included [here](https://angular2-json-schema-form.firebaseapp.com/).
+
+Expected HTTP return code is `200`. If task of the given name does not exist,
+return code is `404`. Supported HTTP method is `GET`.
+
+
+## Output Form Layout Endpoint
+
+Endpoint `/layout/outputs/<task-name>` should provide specification of a
+computational task output narrowing form layout as follows:
+
+```
+[
+    {
+        "aspect": "some_aspect",
+        "layout":
+        [
+            // form layout elements with styling
+        ],
+    },
+    ...
+]
+```
+
+Expected HTTP return code is `200`. If task of the given name does not exist,
+return code is `404`. Supported HTTP method is `GET`.
+
 
 ## Result Access Endpoints
 
