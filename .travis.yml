@@ -1,0 +1,42 @@
+language: python
+python:
+- '3.4'
+- '3.5'
+- '3.6'
+sudo: required
+services:
+- docker
+env:
+  global:
+  - VERSION=1.0.0
+  - secure: Ck9c69P3qUDO8EmAnxlCV/Jgh3BcIIrdMLv5yzZ9vOnQsotq4hPhhJkH9uCmHETrG6V9Nm2m8BGSd4JTC8rBW5cDLPnqAAWm3+k/K4pAj4jIiUGo6l0XYe51lx9pNZK2gZEfWH25i/jy/v9dw4PvTOTS1Em/uzSo8mgaWQkUlG53ZI8fgE4yXVcUl4n8Eb3sBgRmHWBarwkNgl+/tx85LpxgRwujTS4LEX8PE7qxHj92ZBzboV3WQRCuULAfy+yEEDC4RJxrvjhyMkkNqQPd0G3g57f1fTkSOHuyVXoGbApB8QJaM4e2mvAnHVn4SyUFpoBcssLuyRQgnyfnkp9JK12xfJ8dKPf7P3a2RZR8UwhMDZy34aDSx0qThsQAz1nES8Ix1KwI8q9U1ag8lTSHQjupyBulTFAR64MVnV+Pw4yKJF1BkB9SgPV0Mf60nwCnFdvSBXAzIew6rVLzMZ3CY/dENVmeqiLo3mvYZXfa124csBGpnCBXqHiz4qHuQAknRfeCFo6pgtsezys4ekfogx6W0PmGyCIoMOaXkCI2LGYutCmHVEgh7FI6jtBjPo3AA0yO/XUEkz6SLybphBItG3Jd0PZuJ0TY9cW+/ENuQwJKV6kLESJ10AsT3ZtkdaL89dAOihmshirYDwTGdp2h0hvzmmgtQUQI5sHENaCCiu8=
+  - secure: BPEXUvs2v5RvvDCLOfzpLwW81gQG//NNtIJn441SxLyJ2IBvxGrhrRPsED1tjpyPf3cmg36bgZATXF7qOyViNThyw5iCiHzAvmPEKtQL9TSIyI0eQpJEEDlu4QLm5DdGRodFKZEcNmDLyF1qXL4bkDCy09EgzdcsLiTL1akb9yaat0GuiAxvYm9uMEyMCKA6PQA1PXJMU1shJSAJcKjVj1Sg8xzccCm4OSHbUoyprUs8Muo3/wLbaxnZLkfFQ1od/IzDF2mMAkXR0BMMJTak37LF6SxQQXxKZLLBkwoO3pq9cDbmOQncR5ZlLwNYDJfb3lI3YyerATA7fFJ41eIALuvGqshGSGhn6XNipxovkJMndL0alQAGLz8RLDkj4poJz2UWzYjDDcpu98hoDBM79EuPZl/ciag+vBLCD/ubQZhFUGQuGXxYYr/vUa3gfzIw9O4qldvtNGAN46omnHGAyJYIZJcZMBHFyVSmovhuWyqWCCbryiAiuqctkCFG2+WB4sk2oPiWdgW3Ru/3/fjBVJkOXFxPloimPPUSg2vFlVDJvr4mRiPKetU/5YmJNVox/TTcqHUNhnwACCf1hGxlxw8qqe/OyPjf7Yo0KTmyled6eSCtrPO1ojB2n7nRlfRcangQyxIxtA1L92DbHxJRdFiAz21D2H3Mtvwi+BkbBwY=
+install:
+- echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin
+- pip install -r requirements.txt
+script:
+- python -m unittest discover
+- |
+  if [[ $(python --version | cut -d' ' -f 2) = 3.6* ]]; then
+      docker build -t spectreteam/spectre-analysis:latest -t spectreteam/spectre-analysis:beta -t spectreteam/spectre-analysis:$VERSION -t spectreteam/spectre-analysis:$VERSION-beta -t spectreteam/spectre-analysis:$VERSION-alpha .
+      docker images
+      if [ $TRAVIS_PULL_REQUEST = "false" ]; then
+          if [ $TRAVIS_BRANCH = "master" ]; then
+              docker push spectreteam/spectre-analysis:latest
+              docker push spectreteam/spectre-analysis:$VERSION
+          elif [ $TRAVIS_BRANCH = "develop" ]; then
+              docker push spectreteam/spectre-analysis:beta
+              docker push spectreteam/spectre-analysis:$VERSION-beta
+          fi
+          docker push spectreteam/spectre-analysis:$VERSION-alpha
+      fi
+  fi
+notifications:
+  webhooks:
+    urls:
+      secure: F5n5CqSLKIIesQp9wmcF6qfRJYYDjmwnWGqLfquEf/XRaL/75mtxDl7/FkYfIUISFKgoSIyMyWG5gmvx/gV8J9r+66dTobDPrrIc8Xa8bWVH1EIOCCc7aTCRyEv6VDBqWRBMiN3jSCImedlGIrRzcvwG6xMXxxmNN8QTzBzBnTQa4ENNICch239QPshdaIrBoV+eY4pjsglziQw5ZLe7orB8hWLAMUU+06uuSZyAIzqtPpeLnjaEtQoqKuBUeF5ekZYZKc67a+pnqbl2kZjyE6h+9iEa3cnjhQSyScC+Fevei8Lk8D9avbdfNsNoNNpcmLIX06l1hxiDrtgranoTc/y6dCQGmlrbns2E6/08hS3u+g+9PVveY8dEYn/kEMZF2YG3XqwjzJ2vpk17OWv9IEyT7ESrSMrlYvACBV55/9TIrANIedm5CQcP5LdkWwYCLPclJElAQBSkF0+2sXwSGJ8HaC3I9Vi91fANE4WXlh8AjNMC4w9YcyXrD27ohlnk1yGxw/4nn76h5/Ea1YJkglMeszl9T5GQpZ6ELP+/4Uh4pTmMP47cM0wtJEowaKo/VgXq+Qeile8DPAoNpNZweVpNrJiEobix2n1hGHI9GfJMuMIFGLIeIoNryW2pfzYyr5YgOSMFfETLiBP0pvLvgoiHRA13sCw7ioLnFH21e+o=
+    on_success: always
+    on_failure: always
+    on_start: never
+    on_cancel: never
+    on_error: always

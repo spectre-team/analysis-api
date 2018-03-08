@@ -1,3 +1,8 @@
+[![CodeFactor](https://www.codefactor.io/repository/github/spectre-team/analysis-api/badge/master)](https://www.codefactor.io/repository/github/spectre-team/analysis-api/overview/master)
+[![BCH compliance](https://bettercodehub.com/edge/badge/spectre-team/analysis-api?branch=master)](https://bettercodehub.com/)
+[![Windows Build status](https://ci.appveyor.com/api/projects/status/7x7099pacc2fi5il/branch/master?svg=true)](https://ci.appveyor.com/project/gmrukwa/analysis-api/branch/master)
+[![Linux Build Status](https://travis-ci.org/spectre-team/analysis-api.svg?branch=master)](https://travis-ci.org/spectre-team/analysis-api)
+
 ![Spectre](https://user-images.githubusercontent.com/1897842/31115297-0fe2c3aa-a822-11e7-90e6-92ceccf76137.jpg)
 
 # analysis-api
