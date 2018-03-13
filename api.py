@@ -61,6 +61,17 @@ def get_outputs(task_name: str) -> Response:
     return _ask_for(task_name, "/schema/outputs/")
 
 
+@app.route('/schema/outputs/<string:task_name>/<string:aspect_name>')
+def get_output_by_aspect(task_name: str, aspect_name: str) -> Response:
+    """Get specific aspect's output query pattern from algorithm backend
+
+    Returns:
+        Normalized output query pattern definition.
+    """
+    return _ask_for(task_name, "/schema/outputs/{task_name}/{aspect_name}".format(task_name=task_name,
+                                                                                  aspect_name=aspect_name))
+
+
 @app.route('/layout/inputs/<string:task_name>/')
 def get_inputs_layout(task_name: str) -> Response:
     """Get the definition of algorithm parameterization form
@@ -79,6 +90,17 @@ def get_outputs_layout(task_name: str) -> Response:
         Definitions of forms for narrowing down the result scope.
     """
     return _ask_for(task_name, "/layout/outputs/")
+
+
+@app.route('/layout/outputs/<string:task_name>/<string:aspect_name>')
+def get_output_layout_by_aspect(task_name: str, aspect_name: str) -> Response:
+    """Get the specific aspect's definition of result parameterization form
+
+    Returns:
+        Definition of form for narrowing down the result scope.
+    """
+    return _ask_for(task_name, "/layout/outputs/{task_name}/{aspect_name}".format(task_name=task_name,
+                                                                                  aspect_name=aspect_name))
 
 
 @app.route('/results/')
