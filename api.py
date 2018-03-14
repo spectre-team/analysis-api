@@ -27,18 +27,18 @@ NOT_FOUND = "", 404
 Response = Tuple[str, int]
 
 
-def _proxy(request) -> Response:
+def _jsonify(response) -> Response:
     """Pass request data as a response"""
-    return flask.jsonify(request.json()), request.status_code
+    return flask.jsonify(response.json()), response.status_code
 
 
-def _ask_for(task: str, endpoint: str, protocol: str="http") -> Response:
+def _proxy(task: str, endpoint: str, protocol: str="http", method=requests.get, *args, **kwargs) -> Response:
     try:
-        backend = protocol + "://" + discover.backend(task)
+        worker_url = protocol + "://" + discover.backend(task)
     except KeyError:
         return NOT_FOUND
-    request = requests.get(backend + endpoint + task)
-    return _proxy(request)
+    request = method(worker_url + endpoint, *args, **kwargs)
+    return _jsonify(request)
 
 
 @app.route('/schema/inputs/<string:task_name>/')
@@ -48,7 +48,7 @@ def get_inputs(task_name: str) -> Response:
     Returns:
         Normalized worker inputs definition.
     """
-    return _ask_for(task_name, "/schema/inputs/")
+    return _proxy(task_name, "/schema/inputs/{task_name}".format(task_name=task_name))
 
 
 @app.route('/schema/outputs/<string:task_name>/')
@@ -58,7 +58,18 @@ def get_outputs(task_name: str) -> Response:
     Returns:
         Normalized output query patterns definition.
     """
-    return _ask_for(task_name, "/schema/outputs/")
+    return _proxy(task_name, "/schema/outputs/{task_name}".format(task_name=task_name))
+
+
+@app.route('/schema/outputs/<string:task_name>/<string:aspect_name>')
+def get_output_by_aspect(task_name: str, aspect_name: str) -> Response:
+    """Get specific aspect's output query pattern from algorithm backend
+
+    Returns:
+        Normalized output query pattern definition.
+    """
+    return _proxy(task_name, "/schema/outputs/{task_name}/{aspect_name}".format(task_name=task_name,
+                                                                                aspect_name=aspect_name))
 
 
 @app.route('/layout/inputs/<string:task_name>/')
@@ -68,7 +79,7 @@ def get_inputs_layout(task_name: str) -> Response:
     Returns:
         Definition of input form.
     """
-    return _ask_for(task_name, "/layout/inputs/")
+    return _proxy(task_name, "/layout/inputs/{task_name}".format(task_name=task_name))
 
 
 @app.route('/layout/outputs/<string:task_name>/')
@@ -78,7 +89,18 @@ def get_outputs_layout(task_name: str) -> Response:
     Returns:
         Definitions of forms for narrowing down the result scope.
     """
-    return _ask_for(task_name, "/layout/outputs/")
+    return _proxy(task_name, "/layout/outputs/{task_name}".format(task_name=task_name))
+
+
+@app.route('/layout/outputs/<string:task_name>/<string:aspect_name>')
+def get_output_layout_by_aspect(task_name: str, aspect_name: str) -> Response:
+    """Get the specific aspect's definition of result parameterization form
+
+    Returns:
+        Definition of form for narrowing down the result scope.
+    """
+    return _proxy(task_name, "/layout/outputs/{task_name}/{aspect_name}".format(task_name=task_name,
+                                                                                aspect_name=aspect_name))
 
 
 @app.route('/results/')
@@ -87,8 +109,8 @@ def list_analyses():
     return flask.jsonify(discover.finished_analyses()), 200
 
 
-@app.route('/results/<string:task_name>/<string:task_id>/<string:aspect>/', methods=['POST'])
-def get_result(task_name: str, task_id: str, aspect: str):
+@app.route('/results/<string:task_name>/<string:task_id>/<string:aspect_name>/', methods=['POST'])
+def get_result(task_name: str, task_id: str, aspect_name: str):
     """Get result of algorithm run from its backend.
 
     Query is parsed from JSON sent with the POST request.
@@ -96,14 +118,9 @@ def get_result(task_name: str, task_id: str, aspect: str):
     Returns:
         Normalized algorithms result.
     """
-    try:
-        backend = "http://" + discover.backend(task_name)
-    except KeyError:
-        return NOT_FOUND
-    url = backend + "/results/" + task_name + "/" + task_id + "/" + aspect
-    json = flask.request.get_json()
-    request = requests.post(url, json=json)
-    return _proxy(request)
+    return _proxy(task_name, "/results/{task_name}/{task_id}/{aspect_name}"
+                             .format(task_name=task_name, task_id=task_id, aspect_name=aspect_name),
+                  method=requests.post, json=flask.request.get_json())
 
 
 @app.route('/schedule/<string:task_name>/', methods=['POST'])

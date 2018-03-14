@@ -100,6 +100,9 @@ computational task output as follows:
 `<task-name>` should be replaced by any available task name listed under
 `/algorithms/` endpoint.
 
+You may also query for single aspect instead of complete list, providing its name:
+`/schema/outputs/<task-name>/<aspect-name>`.
+
 Expected HTTP return code is `200`. If task of the given name does not exist,
 return code is `404`. Supported HTTP method is `GET`.
 
@@ -163,6 +166,9 @@ computational task output narrowing form layout as follows:
     ...
 ]
 ```
+
+You may also query for single aspect instead of complete list,
+similarly as for `/schema` endpoint: `/layout/outputs/<task-name>/<aspect-name>`.
 
 Expected HTTP return code is `200`. If task of the given name does not exist,
 return code is `404`. Supported HTTP method is `GET`.
