@@ -139,6 +139,4 @@ def schedule_task(task_name: str):
     config = flask.request.get_json()
     full_task_name = '%s.%s' % (discover.role(task_name), task_name)
     task = scheduler.send_task(full_task_name, kwargs=config)
-    if task.failed():
-        return task.status, 500
-    return task.status, 200
+    return flask.jsonify({"status": task.status}), 200 if not task.failed() else 500
