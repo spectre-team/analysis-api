@@ -109,6 +109,12 @@ def list_analyses():
     return flask.jsonify(discover.finished_analyses()), 200
 
 
+@app.route('/results/<string:task_name>/')
+def list_analyses_of_some_type(task_name: str):
+    """Get list of all finished analyses of some type."""
+    return _proxy(task_name, "/results/{task_name}/".format(task_name=task_name))
+
+
 @app.route('/results/<string:task_name>/<string:task_id>/<string:aspect_name>/', methods=['POST'])
 def get_result(task_name: str, task_id: str, aspect_name: str):
     """Get result of algorithm run from its backend.
