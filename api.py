@@ -96,7 +96,7 @@ def get_inputs(task_name: str) -> Response:
     Returns:
         Normalized worker inputs definition.
     """
-    return _proxy(task_name, "/schema/inputs/{task_name}".format(task_name=task_name))
+    return _proxy(task_name, "/schema/inputs/{task_name}/".format(task_name=task_name))
 
 
 @app.route('/schema/outputs/<string:task_name>/')
@@ -106,7 +106,7 @@ def get_outputs(task_name: str) -> Response:
     Returns:
         Normalized output query patterns definition.
     """
-    return _proxy(task_name, "/schema/outputs/{task_name}".format(task_name=task_name))
+    return _proxy(task_name, "/schema/outputs/{task_name}/".format(task_name=task_name))
 
 
 @app.route('/schema/outputs/<string:task_name>/<string:aspect_name>/')
@@ -131,7 +131,7 @@ def get_inputs_layout(task_name: str) -> Response:
     Returns:
         Definition of input form.
     """
-    return _proxy(task_name, "/layout/inputs/{task_name}".format(task_name=task_name))
+    return _proxy(task_name, "/layout/inputs/{task_name}/".format(task_name=task_name))
 
 
 @app.route('/layout/outputs/<string:task_name>/')
@@ -141,7 +141,7 @@ def get_outputs_layout(task_name: str) -> Response:
     Returns:
         Definitions of forms for narrowing down the result scope.
     """
-    return _proxy(task_name, "/layout/outputs/{task_name}".format(task_name=task_name))
+    return _proxy(task_name, "/layout/outputs/{task_name}/".format(task_name=task_name))
 
 
 @app.route('/layout/outputs/<string:task_name>/<string:aspect_name>/')
@@ -180,7 +180,7 @@ def get_result(task_name: str, task_id: str, aspect_name: str):
     Returns:
         Normalized algorithms result.
     """
-    return _proxy(task_name, "/results/{task_name}/{task_id}/{aspect_name}"
+    return _proxy(task_name, "/results/{task_name}/{task_id}/{aspect_name}/"
                              .format(task_name=task_name, task_id=task_id, aspect_name=aspect_name),
                   method=requests.post, json=flask.request.get_json())
 
