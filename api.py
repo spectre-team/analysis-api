@@ -29,7 +29,9 @@ Response = Tuple[str, int]
 
 def _jsonify(response) -> Response:
     """Pass request data as a response"""
-    return flask.jsonify(response.json()), response.status_code
+    if response.ok:
+        return flask.jsonify(response.json()), response.status_code
+    return "{}", response.status_code
 
 
 CustomResponse = NamedTuple('CustomResponse', [
