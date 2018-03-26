@@ -1,5 +1,5 @@
-from functools import lru_cache
-from typing import Tuple
+from functools import partial
+from typing import Callable, Dict, List, NamedTuple, Tuple, Union
 
 import requests
 import flask
@@ -30,6 +30,52 @@ Response = Tuple[str, int]
 def _jsonify(response) -> Response:
     """Pass request data as a response"""
     return flask.jsonify(response.json()), response.status_code
+
+
+CustomResponse = NamedTuple('CustomResponse', [
+    ('json', Callable[[], Dict]),
+    ('status_code', int),
+    ('ok', bool)
+])
+
+Matcher = NamedTuple('Matcher', [
+    ('key', str),
+    ('value', object)
+])
+Selector = Union[Matcher, str, int]
+
+
+def _match_item(matcher: Matcher, collection: Dict) -> bool:
+    return collection[matcher.key] == matcher.value
+
+
+def _matching(matcher: Matcher, collection: List[Dict]) -> List[Dict]:
+    match = partial(_match_item, matcher)
+    return list(filter(match, collection))
+
+
+def _select(data, selectors: List[Selector]):
+    for selector in selectors:
+        if isinstance(selector, Matcher):
+            data = _matching(selector, data)[0]
+        else:
+            data = data[selector]
+    return data
+
+
+def _http_get_selectively(url: str, selectors: List[Selector]=None, *args, **kwargs):
+    if selectors is None:
+        selectors = []
+    request = requests.get(url, *args, **kwargs)
+
+    if not request.ok:
+        data = {}
+    else:
+        data = _select(request.json(), selectors)
+
+    return CustomResponse(json=lambda: data,
+                          status_code=request.status_code,
+                          ok=request.ok)
 
 
 def _proxy(task: str, endpoint: str, protocol: str="http", method=requests.get, *args, **kwargs) -> Response:
@@ -68,8 +114,12 @@ def get_output_by_aspect(task_name: str, aspect_name: str) -> Response:
     Returns:
         Normalized output query pattern definition.
     """
-    return _proxy(task_name, "/schema/outputs/{task_name}/{aspect_name}".format(task_name=task_name,
-                                                                                aspect_name=aspect_name))
+    url = "/schema/outputs/{task_name}/".format(task_name=task_name)
+    selectors = [
+        Matcher(key='aspect', value=aspect_name),
+        'query_format'
+    ]
+    return _proxy(task_name, url, method=_http_get_selectively, selectors=selectors)
 
 
 @app.route('/layout/inputs/<string:task_name>/')
@@ -99,8 +149,12 @@ def get_output_layout_by_aspect(task_name: str, aspect_name: str) -> Response:
     Returns:
         Definition of form for narrowing down the result scope.
     """
-    return _proxy(task_name, "/layout/outputs/{task_name}/{aspect_name}".format(task_name=task_name,
-                                                                                aspect_name=aspect_name))
+    url = "/layout/outputs/{task_name}/".format(task_name=task_name)
+    selectors = [
+        Matcher(key='aspect', value=aspect_name),
+        'layout'
+    ]
+    return _proxy(task_name, url, method=_http_get_selectively, selectors=selectors)
 
 
 @app.route('/results/')
