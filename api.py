@@ -61,7 +61,7 @@ def get_outputs(task_name: str) -> Response:
     return _proxy(task_name, "/schema/outputs/{task_name}".format(task_name=task_name))
 
 
-@app.route('/schema/outputs/<string:task_name>/<string:aspect_name>')
+@app.route('/schema/outputs/<string:task_name>/<string:aspect_name>/')
 def get_output_by_aspect(task_name: str, aspect_name: str) -> Response:
     """Get specific aspect's output query pattern from algorithm backend
 
@@ -92,7 +92,7 @@ def get_outputs_layout(task_name: str) -> Response:
     return _proxy(task_name, "/layout/outputs/{task_name}".format(task_name=task_name))
 
 
-@app.route('/layout/outputs/<string:task_name>/<string:aspect_name>')
+@app.route('/layout/outputs/<string:task_name>/<string:aspect_name>/')
 def get_output_layout_by_aspect(task_name: str, aspect_name: str) -> Response:
     """Get the specific aspect's definition of result parameterization form
 
