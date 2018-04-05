@@ -1,11 +1,9 @@
-from functools import lru_cache
-from typing import Tuple
-
 import requests
 import flask
 import flask_cors
 
 import discover
+from http_helpers import Response, Matcher, http_get_selectively, proxy
 
 from spectre_analyses.celery import app as scheduler
 
@@ -23,24 +21,6 @@ def get_algorithms():
     return flask.jsonify(discover.tasks()), 200
 
 
-NOT_FOUND = "", 404
-Response = Tuple[str, int]
-
-
-def _jsonify(response) -> Response:
-    """Pass request data as a response"""
-    return flask.jsonify(response.json()), response.status_code
-
-
-def _proxy(task: str, endpoint: str, protocol: str="http", method=requests.get, *args, **kwargs) -> Response:
-    try:
-        worker_url = protocol + "://" + discover.backend(task)
-    except KeyError:
-        return NOT_FOUND
-    request = method(worker_url + endpoint, *args, **kwargs)
-    return _jsonify(request)
-
-
 @app.route('/schema/inputs/<string:task_name>/')
 def get_inputs(task_name: str) -> Response:
     """Get inputs of the algorithm from its backend
@@ -48,7 +28,7 @@ def get_inputs(task_name: str) -> Response:
     Returns:
         Normalized worker inputs definition.
     """
-    return _proxy(task_name, "/schema/inputs/{task_name}".format(task_name=task_name))
+    return proxy(task_name, "/schema/inputs/{task_name}/".format(task_name=task_name))
 
 
 @app.route('/schema/outputs/<string:task_name>/')
@@ -58,18 +38,22 @@ def get_outputs(task_name: str) -> Response:
     Returns:
         Normalized output query patterns definition.
     """
-    return _proxy(task_name, "/schema/outputs/{task_name}".format(task_name=task_name))
+    return proxy(task_name, "/schema/outputs/{task_name}/".format(task_name=task_name))
 
 
-@app.route('/schema/outputs/<string:task_name>/<string:aspect_name>')
+@app.route('/schema/outputs/<string:task_name>/<string:aspect_name>/')
 def get_output_by_aspect(task_name: str, aspect_name: str) -> Response:
     """Get specific aspect's output query pattern from algorithm backend
 
     Returns:
         Normalized output query pattern definition.
     """
-    return _proxy(task_name, "/schema/outputs/{task_name}/{aspect_name}".format(task_name=task_name,
-                                                                                aspect_name=aspect_name))
+    url = "/schema/outputs/{task_name}/".format(task_name=task_name)
+    selectors = [
+        Matcher(key='aspect', value=aspect_name),
+        'query_format'
+    ]
+    return proxy(task_name, url, method=http_get_selectively, selectors=selectors)
 
 
 @app.route('/layout/inputs/<string:task_name>/')
@@ -79,7 +63,7 @@ def get_inputs_layout(task_name: str) -> Response:
     Returns:
         Definition of input form.
     """
-    return _proxy(task_name, "/layout/inputs/{task_name}".format(task_name=task_name))
+    return proxy(task_name, "/layout/inputs/{task_name}/".format(task_name=task_name))
 
 
 @app.route('/layout/outputs/<string:task_name>/')
@@ -89,24 +73,34 @@ def get_outputs_layout(task_name: str) -> Response:
     Returns:
         Definitions of forms for narrowing down the result scope.
     """
-    return _proxy(task_name, "/layout/outputs/{task_name}".format(task_name=task_name))
+    return proxy(task_name, "/layout/outputs/{task_name}/".format(task_name=task_name))
 
 
-@app.route('/layout/outputs/<string:task_name>/<string:aspect_name>')
+@app.route('/layout/outputs/<string:task_name>/<string:aspect_name>/')
 def get_output_layout_by_aspect(task_name: str, aspect_name: str) -> Response:
     """Get the specific aspect's definition of result parameterization form
 
     Returns:
         Definition of form for narrowing down the result scope.
     """
-    return _proxy(task_name, "/layout/outputs/{task_name}/{aspect_name}".format(task_name=task_name,
-                                                                                aspect_name=aspect_name))
+    url = "/layout/outputs/{task_name}/".format(task_name=task_name)
+    selectors = [
+        Matcher(key='aspect', value=aspect_name),
+        'layout'
+    ]
+    return proxy(task_name, url, method=http_get_selectively, selectors=selectors)
 
 
 @app.route('/results/')
 def list_analyses():
     """Get list of all finished analyses."""
     return flask.jsonify(discover.finished_analyses()), 200
+
+
+@app.route('/results/<string:task_name>/')
+def list_analyses_of_some_type(task_name: str):
+    """Get list of all finished analyses of some type."""
+    return proxy(task_name, "/results/{task_name}/".format(task_name=task_name))
 
 
 @app.route('/results/<string:task_name>/<string:task_id>/<string:aspect_name>/', methods=['POST'])
@@ -118,9 +112,9 @@ def get_result(task_name: str, task_id: str, aspect_name: str):
     Returns:
         Normalized algorithms result.
     """
-    return _proxy(task_name, "/results/{task_name}/{task_id}/{aspect_name}"
-                             .format(task_name=task_name, task_id=task_id, aspect_name=aspect_name),
-                  method=requests.post, json=flask.request.get_json())
+    return proxy(task_name, "/results/{task_name}/{task_id}/{aspect_name}/"
+                 .format(task_name=task_name, task_id=task_id, aspect_name=aspect_name),
+                 method=requests.post, json=flask.request.get_json())
 
 
 @app.route('/schedule/<string:task_name>/', methods=['POST'])
@@ -133,6 +127,4 @@ def schedule_task(task_name: str):
     config = flask.request.get_json()
     full_task_name = '%s.%s' % (discover.role(task_name), task_name)
     task = scheduler.send_task(full_task_name, kwargs=config)
-    if task.failed():
-        return task.status, 500
-    return task.status, 200
+    return flask.jsonify({"status": task.status}), 200 if not task.failed() else 500
