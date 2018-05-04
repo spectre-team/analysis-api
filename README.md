@@ -200,6 +200,9 @@ Computational tasks should be defined as a part of worker API, in a form
 of [Celery task](http://docs.celeryproject.org/en/latest/userguide/tasks.html).
 The task should accept input defined exactly as declared in previous point.
 
+**IMPORTANT**: scheduler will put the task on the queue with the same name as
+the task itself, to allow for specialization of workers.
+
 According to the [documentation of Celery](http://docs.celeryproject.org/en/latest/userguide/calling.html#serializers)
 all the parameters of scheduled task are serialized and then exchanged
 between this node and workers. To limit the overhead, input should be small,
